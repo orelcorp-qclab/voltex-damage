@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Voltex Damage Recording System – Orel Corporation QA</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{color-scheme:light;--bg:#f1f3f5;--card:#fff;--tx:#1b2430;--mu:#59636e;--pr:#0b4f8a;--bd:#c9d0d8;--er:#b42318;--wa:#8a5a00;--ok:#1a7f37}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--tx);display:flex;min-height:100vh}
+nav{width:220px;background:#0b2f52;color:#fff;padding:14px;flex-shrink:0}nav h1{font-size:16px;margin:0 0 4px}nav small{color:#b8c9dc}
+nav button{display:block;width:100%;text-align:left;background:none;border:0;color:#fff;padding:10px;margin:2px 0;border-radius:6px;font:inherit;cursor:pointer}
+nav button.on,nav button:hover{background:#1d5a94}
+main{flex:1;min-width:0;padding:16px}.top{display:none}
+section{display:none}section.on{display:block}
+h2{margin:0 0 10px}.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:14px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--pr);border-radius:8px;padding:10px}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mu);font-size:13px}
+label{display:block;font-size:13px;font-weight:600;margin-bottom:3px}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--bd);border-radius:6px;font:inherit;background:var(--card);color:var(--tx)}
+input[readonly]{background:var(--bg);font-weight:700}
+button.b,.btn{padding:8px 14px;border:1px solid var(--pr);background:var(--pr);color:#fff;border-radius:6px;cursor:pointer;font:inherit}
+button.s{background:var(--card);color:var(--pr)}button.d{background:var(--er);border-color:var(--er);color:#fff}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.tw{overflow:auto;max-height:70vh;border:1px solid var(--bd);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:var(--card)}th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:#0b4f8a;color:#fff;z-index:1}th.so{cursor:pointer}tfoot td{font-weight:700;background:var(--bg)}
+.bg{display:inline-block;padding:1px 7px;border:1px solid var(--wa);color:var(--wa);border-radius:10px;font-size:12px;font-weight:700}
+.err{color:var(--er);font-weight:600}.err ul{margin:4px 0}.note{background:#fff4d6;color:#5c3d00;border:1px solid #e3b341;padding:8px;border-radius:6px;font-size:13px;margin-bottom:10px}
+.ch{position:relative;height:280px}.nd{color:var(--mu);padding:30px;text-align:center}
+#toast{position:fixed;right:12px;bottom:12px;z-index:9}#toast div{padding:10px 14px;margin-top:6px;border-radius:6px;color:#fff;background:var(--ok)}#toast .er{background:var(--er)}
+dialog{max-width:760px;width:94%;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx)}
+#p-dash>h2{background:linear-gradient(135deg,#0b2f52,#2563eb);color:#fff;padding:14px 16px;border-radius:10px}
+.kpi{border-left:1px solid var(--bd);border-top:4px solid var(--c,var(--pr));box-shadow:0 1px 4px rgba(15,40,70,.1)}.kpi b{font-size:28px;color:var(--c)}
+.cc{box-shadow:0 1px 4px rgba(15,40,70,.1);border-top:3px solid var(--pr)}.cc>b{font-size:14px}.ch{height:310px;margin-top:8px}
+@media(max-width:800px){main{padding:10px}.top{position:sticky;top:0;z-index:20}nav{position:sticky;top:46px;z-index:20;max-height:80vh;overflow:auto}input,select,textarea{font-size:16px}button.b,.btn{padding:10px 14px}.grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.kpi b{font-size:22px}.ch{height:260px}h2{font-size:18px}.row button{flex:1 1 130px}}
+body.locked nav,body.locked main,body.locked .top{display:none!important}#login{display:none}body.locked #login{display:flex}
+#login{position:fixed;inset:0;align-items:center;justify-content:center;background:#0b2f52;padding:16px;z-index:50}#login form{background:var(--card);padding:22px;border-radius:12px;width:100%;max-width:380px}#login h1{font-size:20px;margin:0}#login .b{width:100%;margin-top:14px;min-height:46px;font-size:16px}#login input{font-size:16px;margin-bottom:8px}
+body.emp .adm{display:none!important}nav small{display:block;margin:4px 0}
+@media(max-width:700px){table.stack thead{display:none}table.stack,table.stack tbody,table.stack tfoot,table.stack tr,table.stack td{display:block;width:100%}table.stack tr{border:1px solid var(--bd);border-radius:8px;margin:8px 0;padding:6px;background:var(--card)}table.stack td{display:flex;justify-content:space-between;gap:10px;white-space:normal;text-align:right;border:0;padding:4px 6px}table.stack td::before{content:attr(data-label);font-weight:700;text-align:left;color:var(--mu)}table.stack td:empty{display:none}.tw{max-height:none;border:0}button.b,.btn{min-height:46px;font-size:16px}}
+@media(max-width:480px){form .grid{grid-template-columns:1fr}}
+footer{color:var(--mu);font-size:12px;margin-top:16px}
+@media(max-width:800px){body{display:block}nav{display:none;width:100%}nav.open{display:block}.top{display:flex;justify-content:space-between;align-items:center;background:#0b2f52;color:#fff;padding:10px}.top button{background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:6px 10px}}
+@media print{nav,.top,.noprint,footer{display:none!important}body{display:block}section{display:none!important}section.on{display:block!important}.tw{max-height:none}}
+</style></head><body class="locked">
+<div id="login"><form id="lf"><h1>Voltex Damage Recording System</h1><p>Orel Corporation · Quality Assurance</p>
+<label for="le">Email</label><input id="le" type="email" autocomplete="username" required>
+<label for="lpw">Password</label><input id="lpw" type="password" autocomplete="current-password" required>
+<button class="b" id="lbtn" type="submit">Sign in</button><p id="lerr" class="err" role="alert"></p></form></div>
+<dialog id="pwd"><form method="dialog"><p id="pwmsg"></p><input id="pwin" type="password" autocomplete="current-password"><div class="row"><button class="b" value="ok">Confirm</button><button class="b s" value="cancel">Cancel</button></div></form></dialog>
+<div class="top"><b>Voltex Damage Recording</b><button onclick="document.querySelector('nav').classList.toggle('open')" aria-label="Menu">☰ Menu</button></div>
+<nav aria-label="Main"><h1>Voltex Damage Recording System</h1><small>Orel Corporation · Quality Assurance</small><hr>
+<button data-p="dash">Dashboard</button><button data-p="gangs">Voltex Gangs Damage</button><button data-p="sockets">Voltex Sockets Damage</button><button data-p="hgangs">Gangs Records History</button><button data-p="hsockets">Sockets Records History</button><button data-p="rep">Damage Analysis &amp; Reports</button><button class="adm" data-p="data">Admin: Data &amp; Settings</button><button class="adm" data-p="audit">Admin: Audit Trail</button>
+<hr><small id="usr"></small><button id="out">Sign out</button><input id="who" type="hidden"></nav>
+<main>
+<div id="sync" class="note">Connecting to the shared database…</div>
+<div id="libwarn" class="err"></div>
+
+<section id="p-dash"><h2>Dashboard</h2><div class="card"><div class="grid">
+<div><label for="d_from">From</label><input type="date" id="d_from"></div><div><label for="d_to">To</label><input type="date" id="d_to"></div>
+<div><label for="d_mod">View</label><select id="d_mod"><option value="all">Combined (Gangs + Sockets)</option><option value="gangs">Gangs only</option><option value="sockets">Sockets only</option></select></div></div>
+<p id="d_info"></p></div><div class="grid" id="d_kpi"></div><br>
+<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr))" id="d_charts"></div></section>
+
+<section id="p-gangs"><h2>Voltex Gangs Damage</h2><div class="card"><form id="f_gangs" novalidate></form></div></section>
+<section id="p-sockets"><h2>Voltex Sockets Damage</h2><div class="card"><form id="f_sockets" novalidate></form></div></section>
+
+
+<section id="p-rep"><h2>Damage Analysis &amp; Reports</h2><div class="card"><div class="grid">
+<div><label for="r_type">Report</label><select id="r_type"><option value="detail">Detailed records</option><option value="day">Daily report</option><option value="week">Weekly report</option><option value="month">Monthly report</option></select></div>
+<div><label for="r_mod">Module</label><select id="r_mod"><option value="all">Gangs + Sockets</option><option value="gangs">Gangs report</option><option value="sockets">Sockets report</option></select></div>
+<div><label for="r_from">Start date</label><input type="date" id="r_from"></div><div><label for="r_to">End date</label><input type="date" id="r_to"></div>
+<div><label for="r_item">Item</label><input id="r_item"></div><div><label for="r_batch">Batch Number</label><input id="r_batch"></div><div><label for="r_cell">Cell No</label><input id="r_cell"></div>
+<div><label for="r_cat">Damage category</label><select id="r_cat"></select></div></div>
+<div class="row noprint adm"><button class="b" id="x_fx">Export filtered → Excel</button><button class="b s" id="x_fc">Export filtered → CSV</button><button class="b s" onclick="window.print()">Print / Save as PDF</button></div></div>
+<div class="card"><p id="r_info"></p><div class="tw"><table id="r_tbl" class="stack"></table></div></div></section>
+
+<section id="p-data"><h2>Admin: Data Backup, Restore &amp; Settings</h2>
+<div class="card"><h3>Excel export (all saved, non-archived records)</h3><div class="row"><button class="b" id="x_g">Gangs → Excel</button><button class="b" id="x_s">Sockets → Excel</button><button class="b" id="x_b">Both → one workbook</button></div></div>
+<div class="card"><h3>JSON backup</h3><p>Records are stored in the shared Firestore database. Last backup: <b id="lastbk">never</b>. Recommended: back up at the end of every shift/day and keep copies on a network drive or USB.</p><div class="row"><button class="b" id="bk">Download JSON backup</button></div></div>
+<div class="card"><h3>Restore from JSON</h3><input type="file" id="rf" accept=".json,application/json"><p id="rinfo"></p><div class="row"><button class="b" id="rmerge" disabled>Merge (keep existing)</button><button class="b d" id="rrep" disabled>Replace all records</button></div><pre id="rsum"></pre></div>
+<div class="card"><h3>Move old local-browser records into Firestore</h3><p id="lsinfo"></p><p>Old records live only in the browser where the previous version was used. Nothing is deleted from local storage by these buttons.</p><div class="row"><button class="b s" id="lsdl">Download local records (JSON)</button><button class="b" id="lsimp">Import local records into Firestore</button></div><pre id="lssum"></pre></div>
+<div class="card"><h3>Danger zone</h3><button class="b d" id="wipe">Delete ALL shared records…</button><p>The audit log is never deleted by this button.</p></div>
+<div class="card"><h3>Settings &amp; security rules</h3><p>Project: <b>voltex-damage-record-5ae2c</b>. Accounts and passwords are managed in Firebase Console → Authentication. Collections used: <b>records</b>, <b>audit</b>. Rules that match this application:</p><pre id="rules" style="white-space:pre-wrap;font-size:12px"></pre></div></section>
+
+<section id="p-audit"><h2>Audit Trail &amp; Users</h2>
+<div class="card">Audit entries are written to Firestore with each change. Firestore rules allow staff to create entries and only the administrator to change or delete them. Visible to administrators only.</div>
+<div class="tw"><table id="a_tbl" class="stack"></table></div></section>
+<footer>Voltex Damage Recording System · Internal QA tool · Orel Corporation, Sri Lanka · Version 2.0 · Firebase shared database</footer>
+</main>
+<dialog id="dlg"><div id="dbody"></div><div class="row"><button class="b s" onclick="dlg.close()">Close</button></div></dialog><div id="toast" aria-live="polite"></div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,reauthenticateWithCredential,EmailAuthProvider} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,collection,doc,onSnapshot,writeBatch,serverTimestamp,query,orderBy,limit} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/* ===== FIREBASE CONFIG – paste your API key below ===== */
+const FB={apiKey:"PASTE_YOUR_FIREBASE_API_KEY_HERE",authDomain:"voltex-damage-record-5ae2c.firebaseapp.com",projectId:"voltex-damage-record-5ae2c",storageBucket:"voltex-damage-record-5ae2c.firebasestorage.app",messagingSenderId:"593043536111",appId:"1:593043536111:web:315a8cdd9cb97257b3431a"};
+const UIDS={admin:"6eSpYbj5aydqXNhlmEFp8a8JECG3",employee:"QDFW8lsRYaSdefqhgH6apqEBkvn1"};
+const CATS={grid:'Grid Damage',base:'Base Damage',shutter:'Shutter Damage',laser:'Laser Damage',swfail:'Switch Action Failure',swdmg:'Switch Damage',dolly:'Dolly Damage',loop:'Loop Damage',otherS:'Other',other:'Other Damage (ex: components)'};
+const ALLC=['grid','base','shutter','laser','swfail','swdmg','dolly','loop','otherS','other'];
+const MODS={gangs:{name:'Gangs',title:'Voltex Gangs Damage',cats:['laser','swdmg','dolly','base','loop','grid','other']},sockets:{name:'Sockets',title:'Voltex Sockets Damage',cats:['grid','base','shutter','laser','swfail','dolly','otherS']}};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sum=(a,f)=>a.reduce((s,r)=>s+f(r),0);
+const pct=(t,q)=>q>0?(Math.round(t*10000/q)/100).toFixed(2):'0.00';
+const tot=r=>sum(MODS[r.module].cats,c=>r.d[c]||0);
+const uid=()=>crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);
+const dt=i=>i?new Date(i).toLocaleString():'';
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const who=()=>$('#who').value.trim();
+let DB={records:[],audit:[]},EDIT=null,S={key:'date',dir:-1,page:1};
+function toast(m,t){const d=document.createElement('div');d.textContent=m;if(t)d.className='er';$('#toast').append(d);setTimeout(()=>d.remove(),5000)}
+let CUR=null,ROLE=null,db=null,auth=null,unsubs=[],PA=[],BUSY=false,EDITMOD=null;
+const ADM=()=>ROLE==='admin';
+const needAdm=()=>ADM()||(toast('Administrator access required.','er'),false);
+const clean=o=>JSON.parse(JSON.stringify(o));
+const tsISO=v=>v&&v.toDate?v.toDate().toISOString():(v||null);
+const recData=r=>{const o=clean(r);delete o.createdAt;delete o.updatedAt;return o};
+function setSync(t,bad){const e=$('#sync');e.textContent=t;e.style.background=bad?'#fde8e8':'#e7f5ea';e.style.color=bad?'#b42318':'#1a5c2e'}
+function log(a,id,det){PA.push({at:new Date().toISOString(),by:CUR.email,byUid:CUR.uid,employeeNo:who()||'',action:a,id:id||'',detail:det||''})}
+async function commit(ops){if(!navigator.onLine){PA=[];toast('No internet connection – nothing was saved.','er');return false}
+try{const b=writeBatch(db);ops.forEach(o=>{const ref=doc(db,'records',o.r.id);if(o.t==='create')b.set(ref,{...recData(o.r),createdAt:serverTimestamp(),updatedAt:serverTimestamp()});else if(o.t==='update')b.update(ref,{...recData(o.r),updatedAt:serverTimestamp()});else b.delete(ref)});
+PA.forEach(a=>b.set(doc(collection(db,'audit')),{...a,createdAt:serverTimestamp()}));await b.commit();PA=[];return true}
+catch(e){PA=[];toast('NOT saved: '+(e.code==='permission-denied'?'permission denied by the database rules.':e.message),'er');return false}}
+async function commitMany(ops){for(let i=0;i<ops.length;i+=400){if(!await commit(ops.slice(i,i+400)))return false}if(!ops.length)return await commit([]);return true}
+function askPw(msg){return new Promise(res=>{const d=$('#pwd');$('#pwmsg').textContent=msg;$('#pwin').value='';d.returnValue='';d.onclose=()=>res(d.returnValue==='ok'?$('#pwin').value:null);d.showModal()})}
+async function reauth(){const p=await askPw('Enter your admin password to confirm this action:');if(p===null)return false;try{await reauthenticateWithCredential(CUR,EmailAuthProvider.credential(CUR.email,p));return true}catch(e){toast('Wrong password – action cancelled.','er');return false}}
+function refreshUI(){const c=($$('section.on')[0]||{}).id;({'p-dash':dash,'p-hgangs':()=>hist('gangs'),'p-hsockets':()=>hist('sockets'),'p-rep':rep,'p-audit':audit,'p-data':lsInfo}[c]||(()=>{}))()}
+function startSync(){setSync('Loading records…');
+unsubs.push(onSnapshot(collection(db,'records'),snap=>{DB.records=snap.docs.map(d=>{const o=d.data();o.id=d.id;o.createdAt=tsISO(o.createdAt);o.updatedAt=tsISO(o.updatedAt);o.d=o.d||{};o.history=o.history||[];o.batch=o.batch||'';o.comment=o.comment||'';return o});setSync('Live – shared database · '+DB.records.length+' records'+(snap.metadata.fromCache?' (offline copy)':''));refreshUI()},e=>{setSync('Cannot read records: '+e.message,true);toast('Cannot read records: '+e.message,'er')}));
+if(ADM())unsubs.push(onSnapshot(query(collection(db,'audit'),orderBy('at','desc'),limit(300)),snap=>{DB.audit=snap.docs.map(d=>d.data()).reverse();refreshUI()},e=>toast('Cannot read audit log: '+e.message,'er')))}
+const reasons=r=>{const a=[];if(r.qty===0)a.push('Product QTY is zero');if(tot(r)>r.qty)a.push('Total damage exceeds Product QTY');if(r.exception)a.push('Documented exception: '+r.exception);return a};
+
+/* ---------- navigation ---------- */
+function show(p){if(ROLE==='employee'&&(p==='data'||p==='audit'))p='dash';$$('section').forEach(s=>s.classList.toggle('on',s.id==='p-'+p));$$('nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));$('nav').classList.remove('open');({dash,hgangs:()=>hist('gangs'),hsockets:()=>hist('sockets'),rep,audit}[p]||(()=>{}))()}
+$$('nav button').forEach(b=>b.onclick=()=>show(b.dataset.p));
+
+/* ---------- forms ---------- */
+function buildForm(m){const M=MODS[m];$('#f_'+m).innerHTML=`<div id="e_${m}" class="err" role="alert"></div><div class="grid">
+<div><label>Employee No *</label><input name="emp" autocomplete="off"></div><div><label>Date *</label><input type="date" name="date" required></div><div><label>Item *</label><input name="item"></div><div><label>Batch Number</label><input name="batch"></div><div><label>Cell No *</label><input name="cell"></div>
+<div><label>Product QTY *</label><input name="qty" inputmode="numeric" autocomplete="off"></div>
+${M.cats.map(c=>`<div><label>${CATS[c]}</label><input class="num" name="${c}" inputmode="numeric" autocomplete="off"></div>`).join('')}
+<div><label>Total Damage QTY (auto)</label><input name="total" readonly value="0"></div><div><label>Damage Rate (auto)</label><input name="rate" readonly value="–"></div></div>
+<div class="grid" style="margin-top:10px"><div><label>Comment</label><textarea name="comment" rows="2"></textarea></div><div><label>Exception / correction reason (required if Total Damage exceeds Product QTY)</label><textarea name="exc" rows="2"></textarea></div></div>
+<div class="row"><button type="submit" class="b" name="save">Save Record</button><button type="submit" class="b" name="upd" hidden>Update Record</button><button type="button" class="b s" name="reset">Reset Form</button><button type="button" class="b s" name="cancel" hidden>Cancel Edit</button></div>`;
+const f=$('#f_'+m);f.date.value=ymd(new Date());
+f.emp.value=$('#who').value;f.oninput=e=>{if(e.target.name==='emp'){$('#who').value=e.target.value;localStorage.setItem('vx_who',e.target.value);syncEmp()}calc(m)};f.onsubmit=e=>{e.preventDefault();submit(m).catch(x=>{console.error(x);toast('Unexpected error – record not saved: '+x.message,'er')})};f.reset.onclick=()=>clearForm(m);f.cancel.onclick=()=>clearForm(m)}
+function syncEmp(){['gangs','sockets'].forEach(m=>{const e=$('#f_'+m).elements.emp;if(e&&e!==document.activeElement)e.value=$('#who').value})}
+function num(s){s=s.trim();return s===''?null:/^\d+$/.test(s)?Number(s):NaN}
+function calc(m){const f=$('#f_'+m).elements;const t=sum(MODS[m].cats,c=>{const v=num(f[c].value);return v>0?v:0});const q=num(f.qty.value);f.total.value=t;f.rate.value=q===null||isNaN(q)?'–':pct(t,q)+' %'}
+function clearForm(m){const f=$('#f_'+m);HTMLFormElement.prototype.reset.call(f);f.date.value=ymd(new Date());f.emp.value=$('#who').value;EDIT=null;f.save.hidden=false;f.upd.hidden=true;f.cancel.hidden=true;$('#e_'+m).innerHTML='';calc(m)}
+async function submit(m){if(BUSY)return;const f=$('#f_'+m),E=[],d={};
+const v={date:f.date.value,item:f.item.value.trim(),batch:f.batch.value.trim(),cell:f.cell.value.trim(),comment:f.comment.value.trim()};
+if(!who()&&!EDIT)E.push('Employee No is required.');if(!/^\d{4}-\d{2}-\d{2}$/.test(v.date))E.push('Date is required.');if(!v.item)E.push('Item is required.');if(!v.cell)E.push('Cell No is required.');
+const q=num(f.qty.value);if(q===null)E.push('Product QTY is required.');else if(isNaN(q))E.push('Product QTY must be a non-negative whole number.');
+MODS[m].cats.forEach(c=>{const x=num(f[c].value);if(isNaN(x))E.push(CATS[c]+' must be a non-negative whole number (no negatives, decimals or letters).');d[c]=x});
+const t=sum(MODS[m].cats,c=>d[c]||0),exc=f.exc.value.trim();
+if(!E.length&&t>q&&!exc)E.push(`Total Damage QTY (${t}) exceeds Product QTY (${q}). Correct the quantities or enter a documented exception reason.`);
+if(E.length){$('#e_'+m).innerHTML='<ul>'+E.map(e=>'<li>'+esc(e)+'</li>').join('')+'</ul>';$('#e_'+m).scrollIntoView({block:'center'});toast('Record NOT saved – see the messages above the form.','er');return}
+$('#e_'+m).innerHTML='';
+const dup=DB.records.some(r=>r.module===m&&!r.archived&&r.id!==EDIT&&r.date===v.date&&r.item.toLowerCase()===v.item.toLowerCase()&&r.batch.toLowerCase()===v.batch.toLowerCase()&&r.cell.toLowerCase()===v.cell.toLowerCase());
+if(dup&&!confirm('A record with the same Date, Item, Batch and Cell already exists. Is this a legitimate additional record?'))return;
+const base={...v,qty:q,d,exception:t>q?exc:''};
+BUSY=true;f.save.disabled=f.upd.disabled=true;
+try{
+if(EDIT){if(!ADM())return toast('Only an administrator can edit records.','er');
+const r=DB.records.find(x=>x.id===EDIT);if(!r)return toast('Record no longer exists.','er');
+if(r.modified!==EDITMOD)return toast('Someone else changed this record while you were editing. Cancel the edit and open it again.','er');
+const ch=[];['date','item','batch','cell','qty','comment'].forEach(k=>{if(r[k]!==base[k])ch.push({f:k,from:r[k],to:base[k]})});MODS[m].cats.forEach(c=>{if((r.d[c]??null)!==(d[c]??null))ch.push({f:CATS[c],from:r.d[c]??null,to:d[c]??null})});
+if(!ch.length){toast('No changes to save.');return clearForm(m)}
+let why='';if(ch.some(c=>c.f==='qty'||Object.values(CATS).includes(c.f))){why=(prompt('Reason for changing saved production/damage quantities (required):')||'').trim();if(!why)return toast('Update cancelled: a reason is required.','er')}
+const now=new Date().toISOString(),nr={...r,...base,modified:now,modifiedBy:CUR.email,modifiedByUid:CUR.uid,history:[...r.history,{at:now,by:CUR.email,reason:why,changes:ch}]};
+log('EDIT',r.id,why+' '+ch.map(c=>c.f).join(','));if(!await commit([{t:'update',r:nr}]))return;toast('Record updated.')}
+else{const n=new Date().toISOString(),r={id:uid(),module:m,...base,employeeNo:who(),createdByUid:CUR.uid,time:new Date().toTimeString().slice(0,5),created:n,createdBy:who(),modified:n,modifiedBy:who(),archived:false,history:[]};
+log('CREATE',r.id,m);if(!await commit([{t:'create',r}]))return;toast('Record saved.')}
+clearForm(m)}finally{BUSY=false;f.save.disabled=f.upd.disabled=false}}
+function editRec(id){const r=DB.records.find(x=>x.id===id);if(!r)return;if(!ADM())return;show(r.module);const f=$('#f_'+r.module);EDIT=id;EDITMOD=r.modified;f.date.value=r.date;f.item.value=r.item;f.batch.value=r.batch;f.cell.value=r.cell;f.qty.value=r.qty;f.comment.value=r.comment;f.exc.value=r.exception||'';MODS[r.module].cats.forEach(c=>f[c].value=r.d[c]??'');f.save.hidden=true;f.upd.hidden=false;f.cancel.hidden=false;calc(r.module);f.item.focus()}
+
+/* ---------- filtering & tables ---------- */
+function filt(f){const q=(f.q||'').toLowerCase();return DB.records.filter(r=>(f.arch||!r.archived)&&(!f.mod||f.mod==='all'||r.module===f.mod)&&(!f.from||r.date>=f.from)&&(!f.to||r.date<=f.to)&&(!f.item||r.item.toLowerCase().includes(f.item.toLowerCase()))&&(!f.batch||r.batch.toLowerCase().includes(f.batch.toLowerCase()))&&(!f.cell||r.cell.toLowerCase().includes(f.cell.toLowerCase()))&&(!f.cat||f.cat==='all'||(r.d[f.cat]||0)>0)&&(!q||[r.item,r.batch,r.cell].some(x=>x.toLowerCase().includes(q))))}
+const td=c=>c&&c.h!==undefined?c.h:esc(c);
+const tbl=(h,rows,foot)=>{const L=h.map(x=>typeof x==='string'?x:x.t),lab=i=>`data-label="${esc(L[i]||'')}"`;return '<thead><tr>'+h.map(x=>typeof x==='string'?`<th>${esc(x)}</th>`:`<th class="so" tabindex="0" data-k="${x.k}">${esc(x.t)} ${S.key===x.k?(S.dir>0?'▲':'▼'):'↕'}</th>`).join('')+'</tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr>'+r.map((c,i)=>`<td ${lab(i)}>`+td(c)+'</td>').join('')+'</tr>').join(''):`<tr><td colspan="${h.length}">No records match the current filters.</td></tr>`)+'</tbody>'+(foot?'<tfoot><tr>'+foot.map((c,i)=>`<td ${lab(i)}>`+esc(c)+'</td>').join('')+'</tr></tfoot>':'')};
+const catOpts=()=>'<option value="all">All categories</option>'+ALLC.map(c=>`<option value="${c}">${esc(CATS[c])}</option>`).join('');
+const dv=(r,c)=>MODS[r.module].cats.includes(c)?(r.d[c]===null||r.d[c]===undefined?'–':r.d[c]):'n/a';
+
+/* ---------- history (separate for Gangs and Sockets) ---------- */
+const SS={gangs:{key:'date',dir:-1,page:1},sockets:{key:'date',dir:-1,page:1}};
+function buildHist(m){const M=MODS[m],s=document.createElement('section');s.id='p-h'+m;
+s.innerHTML=`<h2>${M.title} – Records History</h2><div class="card"><div class="grid"><div><label>Search (Item / Batch / Cell)</label><input data-f="q"></div><div><label>From</label><input type="date" data-f="from"></div><div><label>To</label><input type="date" data-f="to"></div><div><label>Damage category</label><select data-f="cat"><option value="all">All categories</option>${M.cats.map(c=>`<option value="${c}">${esc(CATS[c])}</option>`).join('')}</select></div><div><label>Archived</label><select data-f="arch"><option value="no">Hide archived</option><option value="yes">Include archived</option></select></div></div></div><div class="tw"><table class="stack"></table></div><div class="row"></div>`;
+$('#p-rep').before(s);
+s.querySelectorAll('[data-f]').forEach(i=>i.oninput=()=>{SS[m].page=1;hist(m)});
+s.querySelector('table').onclick=async e=>{S=SS[m];const th=e.target.closest('th.so');if(th){S.dir=S.key===th.dataset.k?-S.dir:1;S.key=th.dataset.k;return hist(m)}const b=e.target.closest('button[data-a]');if(!b)return;const id=b.dataset.i,r=DB.records.find(x=>x.id===id),a=b.dataset.a;
+if(a==='v')return detail(r);if(!needAdm())return;if(a==='e')return editRec(id);const now=new Date().toISOString();let nr=null,op='update';
+if(a==='r'){const w=(prompt('Reason for archiving this record:')||'').trim();if(!w)return toast('Archive cancelled: reason required.','er');nr={...r,archived:true,archReason:w,archAt:now,archBy:CUR.email,modified:now,modifiedBy:CUR.email};log('ARCHIVE',id,w)}
+if(a==='u'){nr={...r,archived:false,modified:now,modifiedBy:CUR.email};log('RESTORE_RECORD',id,'')}
+if(a==='x'){if(!await reauth())return;if(prompt('Type DELETE to permanently remove this record for ALL users (it cannot be undone):')!=='DELETE')return;const w=(prompt('Reason for permanent deletion (required):')||'').trim();if(!w)return toast('Delete cancelled: reason required.','er');op='delete';nr=r;log('DELETE',id,w+' | deleted record: '+JSON.stringify({m:r.module,date:r.date,item:r.item,batch:r.batch,cell:r.cell,qty:r.qty,d:r.d,emp:r.employeeNo}))}
+if(nr&&await commit([{t:op,r:nr}]))toast(op==='delete'?'Record deleted.':'Record updated.')}}
+const acts=r=>{const B=(a,t,c)=>`<button class="b ${c||'s'}" data-a="${a}" data-i="${r.id}">${t}</button> `;return B('v','View')+(ADM()?(r.archived?B('u','Restore')+B('e','Edit'):B('e','Edit')+B('r','Archive'))+B('x','Delete','d'):'')};
+function hist(m){S=SS[m];const M=MODS[m],s=$('#p-h'+m),g=k=>s.querySelector(`[data-f=${k}]`).value;
+const vc=g('cat')==='all'?M.cats:[g('cat')];const R=filt({mod:m,q:g('q'),from:g('from'),to:g('to'),cat:g('cat'),arch:g('arch')==='yes'});
+const val=r=>S.key==='total'?tot(r):r[S.key];R.sort((a,b)=>{const x=val(a),y=val(b);return(typeof x==='number'?x-y:String(x).localeCompare(String(y),undefined,{numeric:true}))*S.dir});
+const pages=Math.max(1,Math.ceil(R.length/15));S.page=Math.min(S.page,pages);const P=R.slice((S.page-1)*15,S.page*15),Q=sum(R,r=>r.qty),T=sum(R,tot);
+s.querySelector('table').innerHTML=tbl([{k:'date',t:'Date'},{k:'item',t:'Item'},{k:'batch',t:'Batch Number'},{k:'cell',t:'Cell No'},{k:'qty',t:'Product QTY'},...vc.map(c=>CATS[c]),{k:'total',t:'Total Damage QTY'},'Damage Rate (%)','Comment','Status','Actions'],
+P.map(r=>[r.date,r.item,r.batch,r.cell,r.qty,...vc.map(c=>r.d[c]??'–'),tot(r),pct(tot(r),r.qty)+' %',r.comment,{h:(reasons(r).length?'<span class="bg">⚠ Review</span> ':'')+(r.archived?'<span class="bg">Archived</span>':'')},{h:acts(r)}]),
+['TOTAL (all '+R.length+' filtered)','','','',Q,...vc.map(c=>sum(R,r=>r.d[c]||0)),T,pct(T,Q)+' %','','','']);
+const pg=s.querySelector('.row');pg.innerHTML=`<button class="b s" ${S.page<2?'disabled':''}>‹ Prev</button><span>Page ${S.page} of ${pages} · ${R.length} records</span><button class="b s" ${S.page>=pages?'disabled':''}>Next ›</button>`;
+const bt=pg.querySelectorAll('button');bt[0].onclick=()=>{S.page--;hist(m)};bt[1].onclick=()=>{S.page++;hist(m)}}
+function detail(r){const t=tot(r);$('#dbody').innerHTML=`<h3>${esc(MODS[r.module].title)} – record</h3><p>ID: ${esc(r.id)}<br>Date ${esc(r.date)} · Item ${esc(r.item)} · Batch ${esc(r.batch)||'–'} · Cell ${esc(r.cell)}<br>Product QTY ${r.qty} · Total Damage ${t} · Damage Rate ${pct(t,r.qty)} %</p>
+<p>${MODS[r.module].cats.map(c=>esc(CATS[c])+': <b>'+(r.d[c]??'not entered')+'</b>').join('<br>')}</p><p>Comment: ${esc(r.comment)||'–'}</p>${reasons(r).length?'<p class="err">⚠ Review: '+esc(reasons(r).join('; '))+'</p>':''}
+<p>Created ${dt(r.created)} by Emp. No ${esc(r.createdBy)}<br>Last modified ${dt(r.modified)} by Emp. No ${esc(r.modifiedBy)}${r.archived?`<br>Archived ${dt(r.archAt)} by Emp. No ${esc(r.archBy)}: ${esc(r.archReason)}`:''}</p><h4>Change history</h4>${r.history.length?r.history.map(h=>`<p>${dt(h.at)} – Emp. No ${esc(h.by)}${h.reason?' – Reason: '+esc(h.reason):''}<br>${h.changes.map(c=>esc(c.f)+': '+esc(c.from)+' → '+esc(c.to)).join('<br>')}</p>`).join(''):'<p>No edits.</p>'}`;$('#dlg').showModal()}
+
+/* ---------- dashboard ---------- */
+const CH={},PAL=['#2563eb','#f97316','#16a34a','#eab308','#8b5cf6','#06b6d4','#ec4899','#64748b','#ef4444','#14b8a6'];
+const vals={id:'vals',afterDatasetsDraw(c){const x=c.ctx,h=c.options.indexAxis==='y';x.save();x.font='600 11px system-ui';x.fillStyle='#334155';c.data.datasets.forEach((d,i)=>{if(d.type==='line'||d.yAxisID==='y2')return;c.getDatasetMeta(i).data.forEach((b,j)=>{const v=d.data[j];if(v==null)return;x.textAlign=h?'left':'center';h?x.fillText(v,b.x+4,b.y+4):x.fillText(v,b.x,b.y-4)})});x.restore()}};
+if(typeof Chart!=='undefined'){Chart.defaults.font.family='system-ui,Segoe UI,Arial,sans-serif';Chart.defaults.color='#475569';Chart.register(vals)}
+const ds=(l,d,i,k,o={})=>k==='line'?{type:'line',label:l,data:d,borderColor:PAL[i],backgroundColor:PAL[i]+'33',fill:true,tension:.3,pointRadius:3,pointBackgroundColor:PAL[i],borderWidth:2.5,...o}:{type:'bar',label:l,data:d,backgroundColor:o.multi?d.map((_,j)=>PAL[j%PAL.length]):PAL[i],borderRadius:5,maxBarThickness:46,...o};
+function agg(R,kf){const m=new Map();R.forEach(r=>{const k=kf(r);const o=m.get(k)||{q:0,t:0,n:0};o.q+=r.qty;o.t+=tot(r);o.n++;m.set(k,o)});return m}
+function draw(id,type,labels,sets,o={}){if(CH[id])CH[id].destroy();const c=$('#'+id),has=labels.length>0&&typeof Chart!=='undefined';c.hidden=!has;c.parentElement.querySelector('.nd').hidden=has;if(!has)return;
+const gr={color:'#e5e9ef'},nogr={display:false},t=x=>({display:!!x,text:x}),dn=type==='doughnut';
+const sc=dn?{}:o.horiz?{x:{beginAtZero:true,grid:gr,title:t(o.yt)},y:{grid:nogr}}:{x:{stacked:!!o.stacked,grid:nogr},y:{beginAtZero:true,stacked:!!o.stacked,grid:gr,title:t(o.yt)},...(o.y2?{y2:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false},title:t(o.y2)}}:{})};
+CH[id]=new Chart(c,{type,data:{labels,datasets:sets},options:{responsive:true,maintainAspectRatio:false,indexAxis:o.horiz?'y':'x',cutout:dn?'58%':undefined,layout:{padding:{top:18,right:o.horiz?34:8}},
+plugins:{vals:type==='bar'&&!o.stacked?{}:false,legend:{display:sets.length>1||dn,position:dn&&innerWidth>600?'right':'bottom',labels:{usePointStyle:true,boxWidth:8}},tooltip:{backgroundColor:'#0b2f52',padding:10}},scales:sc}})}
+function dash(){if(!$('#d_charts').children.length)$('#d_charts').innerHTML=[['c1','Daily damage rate – Gangs (%)'],['c2','Daily damage rate – Sockets (%)'],['c3','Damage category distribution – Gangs (pcs)'],['c4','Damage category distribution – Sockets (pcs)'],['c5','Gangs vs Sockets damage rate (%)'],['c6','Top 10 items by damage quantity (pcs)']].map(([i,t])=>`<div class="card cc"><b>${t}</b><div class="ch"><canvas id="${i}"></canvas><div class="nd">No valid data for this selection.</div></div></div>`).join('');
+const f={from:$('#d_from').value,to:$('#d_to').value,mod:$('#d_mod').value},R=filt(f),Q=sum(R,r=>r.qty),T=sum(R,tot);
+const bat=new Set(R.filter(r=>r.batch).map(r=>r.batch.toLowerCase())),items=new Set(R.map(r=>r.item.toLowerCase()));
+$('#d_kpi').innerHTML=[['📦','Total Product QTY',Q,'#2563eb'],['⚠️','Total Damage QTY',T,'#ef4444'],['📉','Overall Damage Rate',pct(T,Q)+' %','#f97316'],['🏷️','Total Recorded Batches',bat.size,'#8b5cf6'],['🗂️','Total Records',R.length,'#16a34a'],['🔧','Items Recorded',items.size,'#06b6d4']].map(([i,a,b,c])=>`<div class="kpi" style="--c:${c}"><span>${i} ${a}</span><b>${b}</b></div>`).join('');
+$('#d_info').textContent=`Period: ${f.from||'start'} to ${f.to||'latest'} · View: ${f.mod==='all'?'Combined':MODS[f.mod].name} · Records used: ${R.length} (archived excluded) · Units: pieces; rate = total damage ÷ total product × 100.`;
+const per=(m,idr,idc,ci)=>{const Rm=filt({from:f.from,to:f.to,mod:m}),dm=agg(Rm,r=>r.date),k=[...dm.keys()].sort();
+draw(idr,'line',k,[ds('Damage rate (%)',k.map(x=>+pct(dm.get(x).t,dm.get(x).q)),ci,'line')],{yt:'Rate (%)'});
+const cs=MODS[m].cats.map(c=>[CATS[c],sum(Rm,r=>r.d[c]||0)]).filter(x=>x[1]>0);
+draw(idc,'doughnut',cs.map(x=>x[0]),[{data:cs.map(x=>x[1]),backgroundColor:PAL,borderColor:'#fff',borderWidth:2}]);return Rm.length};
+const ng=per('gangs','c1','c3',0),ns=per('sockets','c2','c4',1);
+$('#d_info').textContent+=` Gangs/Sockets charts use the date range only (Gangs records: ${ng}, Sockets records: ${ns}).`;
+const mo=agg(R,r=>MODS[r.module].name),mk=[...mo.keys()];draw('c5','bar',mk,[ds('Damage rate (%)',mk.map(k=>+pct(mo.get(k).t,mo.get(k).q)),0,'bar',{multi:true})],{yt:'Rate (%)'});
+const it=agg(R,r=>r.item),t6=[...it.entries()].sort((a,b)=>b[1].t-a[1].t).slice(0,10).filter(x=>x[1].t>0);draw('c6','bar',t6.map(x=>x[0]),[ds('Damage QTY (pcs)',t6.map(x=>x[1].t),0,'bar',{multi:true})],{horiz:true,yt:'Pieces'})}
+['d_from','d_to','d_mod'].forEach(i=>$('#'+i).oninput=dash);
+
+/* ---------- reports ---------- */
+const rf=()=>({mod:$('#r_mod').value,from:$('#r_from').value,to:$('#r_to').value,item:$('#r_item').value,batch:$('#r_batch').value,cell:$('#r_cell').value,cat:$('#r_cat').value});
+function gkey(d,t){if(t==='day')return d;if(t==='month')return d.slice(0,7);const x=new Date(d+'T00:00:00');x.setDate(x.getDate()-(x.getDay()+6)%7);return 'Week of '+ymd(x)}
+function rep(){const f=rf(),VC=f.cat&&f.cat!=='all'?[f.cat]:ALLC,R=filt(f).sort((a,b)=>a.date.localeCompare(b.date)),t=$('#r_type').value;
+$('#r_info').textContent=`Generated: ${new Date().toLocaleString()} · Period: ${f.from||'start'} to ${f.to||'latest'} · Module: ${f.mod==='all'?'Gangs + Sockets':MODS[f.mod].name} · Records: ${R.length}`;
+const Q=sum(R,r=>r.qty),T=sum(R,tot),cn=VC.map(c=>sum(R,r=>r.d[c]||0)),H=VC.map(c=>CATS[c]);
+if(t==='detail')$('#r_tbl').innerHTML=tbl(['Date','Module','Item','Batch Number','Cell No','Product QTY',...H,'Total Damage QTY','Damage Rate (%)'],R.map(r=>[r.date,MODS[r.module].name,r.item,r.batch,r.cell,r.qty,...VC.map(c=>dv(r,c)),tot(r),pct(tot(r),r.qty)]),['TOTAL','','','','',Q,...cn,T,pct(T,Q)]);
+else{const g=new Map();R.forEach(r=>{const k=gkey(r.date,t),o=g.get(k)||[];o.push(r);g.set(k,o)});
+$('#r_tbl').innerHTML=tbl(['Period','Records','Product QTY',...H,'Total Damage QTY','Damage Rate (%)'],[...g.entries()].map(([k,a])=>[k,a.length,sum(a,r=>r.qty),...VC.map(c=>sum(a,r=>r.d[c]||0)),sum(a,tot),pct(sum(a,tot),sum(a,r=>r.qty))]),['TOTAL',R.length,Q,...cn,T,pct(T,Q)])}}
+['r_type','r_from','r_to','r_item','r_batch','r_cell','r_cat'].forEach(i=>$('#'+i).oninput=rep);
+function fillR(){const m=$('#r_mod').value,L=m==='all'?ALLC:MODS[m].cats,old=$('#r_cat').value;$('#r_cat').innerHTML='<option value="all">All categories</option>'+L.map(c=>`<option value="${c}">${esc(CATS[c])}</option>`).join('');$('#r_cat').value=L.includes(old)?old:'all'}
+$('#r_mod').oninput=()=>{fillR();rep()};
+
+/* ---------- exports ---------- */
+const lib=()=>typeof XLSX==='undefined'?(toast('Excel library did not load (check internet connection).','er'),false):true;
+function sheet(m,R){const cs=MODS[m].cats,H=['Date','Item','Batch Number','Cell No','Product QTY',...cs.map(c=>CATS[c]),'Total Damage QTY','Comment','Damage Rate (%)'];
+const ws=XLSX.utils.aoa_to_sheet([H,...R.map(r=>[r.date,r.item,r.batch,r.cell,r.qty,...cs.map(c=>r.d[c]??''),tot(r),r.comment,+pct(tot(r),r.qty)])]);ws['!cols']=H.map((h,i)=>({wch:i<4?16:Math.max(12,Math.min(30,h.length))}));return ws}
+function wb(Rg,Rs,period){const w=XLSX.utils.book_new(),S0=[['Voltex Damage Recording System – Summary'],['Generated',new Date().toLocaleString()],['Period',period],[],['Module','Records','Product QTY','Total Damage QTY','Damage Rate (%)']];
+[['Gangs',Rg],['Sockets',Rs]].forEach(([n,R])=>S0.push([n,R.length,sum(R,r=>r.qty),sum(R,tot),+pct(sum(R,tot),sum(R,r=>r.qty))]));
+XLSX.utils.book_append_sheet(w,XLSX.utils.aoa_to_sheet(S0),'Summary');XLSX.utils.book_append_sheet(w,sheet('gangs',Rg),'Gangs');XLSX.utils.book_append_sheet(w,sheet('sockets',Rs),'Sockets');return w}
+const stamp=()=>ymd(new Date());
+const act=m=>filt({mod:m});
+$('#x_g').onclick=()=>{if(!needAdm())return;if(!lib())return;const w=XLSX.utils.book_new();XLSX.utils.book_append_sheet(w,sheet('gangs',act('gangs')),'Gangs');XLSX.writeFile(w,`Voltex_Gangs_${stamp()}.xlsx`)};
+$('#x_s').onclick=()=>{if(!needAdm())return;if(!lib())return;const w=XLSX.utils.book_new();XLSX.utils.book_append_sheet(w,sheet('sockets',act('sockets')),'Sockets');XLSX.writeFile(w,`Voltex_Sockets_${stamp()}.xlsx`)};
+$('#x_b').onclick=()=>{if(!needAdm())return;if(lib())XLSX.writeFile(wb(act('gangs'),act('sockets'),'All records'),`Voltex_All_${stamp()}.xlsx`)};
+$('#x_fx').onclick=()=>{if(!needAdm())return;if(!lib())return;const f=rf(),R=filt(f);XLSX.writeFile(wb(R.filter(r=>r.module==='gangs'),R.filter(r=>r.module==='sockets'),`${f.from||'start'} to ${f.to||'latest'}; filters applied`),`Voltex_Filtered_${stamp()}.xlsx`)};
+$('#x_fc').onclick=()=>{if(!needAdm())return;const R=filt(rf()),H=['Module','Date','Item','Batch Number','Cell No','Product QTY',...ALLC.map(c=>CATS[c]),'Total Damage QTY','Comment','Damage Rate (%)'];
+const q=v=>'"'+String(v).replace(/"/g,'""')+'"';const rows=[H,...R.map(r=>[MODS[r.module].name,r.date,r.item,r.batch,r.cell,r.qty,...ALLC.map(c=>MODS[r.module].cats.includes(c)?(r.d[c]??''):''),tot(r),r.comment,pct(tot(r),r.qty)])];
+dl('\ufeff'+rows.map(r=>r.map(q).join(',')).join('\r\n'),`Voltex_Filtered_${stamp()}.csv`,'text/csv')};
+function dl(txt,name,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+
+/* ---------- backup / restore ---------- */
+$('#bk').onclick=()=>{if(!needAdm())return;dl(JSON.stringify({app:'VoltexDamage',version:1,exported:new Date().toISOString(),records:DB.records,audit:DB.audit},null,1),`Voltex_backup_${stamp()}.json`,'application/json');localStorage.setItem('vx_lastbk',new Date().toISOString());lb()};
+const lb=()=>{const t=localStorage.getItem('vx_lastbk');$('#lastbk').textContent=t?dt(t):'never'};
+let PEND=null;
+function validRec(r){if(!r||typeof r.id!=='string'||!MODS[r.module]||!/^\d{4}-\d{2}-\d{2}$/.test(r.date)||!r.item||!r.cell||!Number.isInteger(r.qty)||r.qty<0||typeof r.d!=='object'||!r.d)return false;return Object.values(r.d).every(v=>v===null||(Number.isInteger(v)&&v>=0))}
+$('#rf').onchange=async e=>{PEND=null;$('#rmerge').disabled=$('#rrep').disabled=true;$('#rsum').textContent='';const fl=e.target.files[0];if(!fl)return;
+try{const o=JSON.parse(await fl.text());if(o.app!=='VoltexDamage'||!Array.isArray(o.records))throw new Error('Not a Voltex backup file.');
+const ok=[],bad=[];o.records.forEach(r=>validRec(r)?ok.push(r):bad.push(r));PEND={ok,bad,audit:Array.isArray(o.audit)?o.audit:[]};
+$('#rinfo').textContent=`Backup dated ${dt(o.exported)}: ${o.records.length} records found, ${ok.length} valid, ${bad.length} invalid (will be rejected).`;$('#rmerge').disabled=$('#rrep').disabled=!ok.length}
+catch(x){toast('Invalid backup: '+x.message,'er');$('#rinfo').textContent=''}};
+function fix(r){r=clean(r);delete r.createdAt;delete r.updatedAt;r.history=Array.isArray(r.history)?r.history:[];r.comment=r.comment||'';r.batch=r.batch||'';r.exception=r.exception||'';r.archived=!!r.archived;r.created=r.created||new Date().toISOString();r.employeeNo=String(r.employeeNo||r.createdBy||'imported');r.createdBy=r.createdBy||r.employeeNo;r.createdByUid=CUR.uid;r.time=r.time||'';r.modified=r.modified||r.created;r.modifiedBy=r.modifiedBy||r.createdBy;return r}
+async function importRecs(list,bad,mode,box){const ids=new Set(DB.records.map(r=>r.id));
+if(mode==='replace'){if(prompt('REPLACE deletes ALL '+DB.records.length+' shared records for every user, then imports the backup. A backup of the current data is downloaded first. Type REPLACE to continue:')!=='REPLACE')return;if(!await reauth())return;$('#bk').click();log('RESTORE_REPLACE_DELETE','',DB.records.length+' records removed before import');if(!await commitMany(DB.records.map(r=>({t:'delete',r}))))return;ids.clear()}
+else if(!confirm(`Merge ${list.length} records into the shared database? Existing records are kept; duplicate IDs are skipped.`))return;
+let imp=0,skip=0;const ops=[];list.forEach(r=>{if(ids.has(r.id))skip++;else{ids.add(r.id);ops.push({t:'create',r:fix(r)});imp++}});
+log('IMPORT_'+mode.toUpperCase(),'',`imported ${imp}, skipped ${skip}, rejected ${bad}`);
+if(!await commitMany(ops)){$(box).textContent='Import stopped because of an error. Some records may already have been written; run the import again to add the rest (duplicates are skipped).';return}
+$(box).textContent=`Import summary: imported ${imp}, skipped (duplicate ID) ${skip}, rejected (invalid) ${bad}.`;toast('Import complete.');return true}
+async function restore(mode){if(!needAdm()||!PEND)return;if(await importRecs(PEND.ok,PEND.bad.length,mode,'#rsum')){PEND=null;$('#rmerge').disabled=$('#rrep').disabled=true}}
+const lsRecs=()=>{try{const o=JSON.parse(localStorage.getItem('vx_db')||'null');return o&&Array.isArray(o.records)?o.records:[]}catch(e){return []}};
+function lsInfo(){const n=lsRecs().length;$('#lsinfo').textContent=n?`Found ${n} record(s) in this browser's old local storage.`:'No old local-storage records found in this browser (they may be in another browser, computer or file location).'}
+$('#lsdl').onclick=()=>{if(!needAdm())return;const r=lsRecs();if(!r.length)return toast('No local records found.','er');dl(JSON.stringify({app:'VoltexDamage',version:1,exported:new Date().toISOString(),records:r,audit:[]},null,1),`Voltex_local_records_${stamp()}.json`,'application/json')};
+$('#lsimp').onclick=async()=>{if(!needAdm())return;const all=lsRecs(),ok=all.filter(validRec);if(!all.length)return toast('No local records found.','er');await importRecs(ok,all.length-ok.length,'merge','#lssum')};
+$('#rules').textContent=`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.uid == '${UIDS.admin}'; }
+    function isStaff() { return isAdmin() || (signedIn() && request.auth.uid == '${UIDS.employee}'); }
+    match /records/{id} {
+      allow read: if isStaff();
+      allow create: if isStaff() && request.resource.data.createdByUid == request.auth.uid
+        && request.resource.data.module in ['gangs','sockets']
+        && request.resource.data.employeeNo is string && request.resource.data.employeeNo.size() > 0;
+      allow update, delete: if isAdmin();
+    }
+    match /audit/{id} {
+      allow read: if isAdmin();
+      allow create: if isStaff();
+      allow update, delete: if isAdmin();
+    }
+  }
+}`;
+$('#rmerge').onclick=()=>restore('merge');$('#rrep').onclick=()=>restore('replace');
+$('#wipe').onclick=async()=>{if(!needAdm())return;if(prompt('This permanently deletes ALL '+DB.records.length+' shared records for every user. Download a backup first! Type DELETE ALL to confirm:')!=='DELETE ALL')return;if(!await reauth())return;log('DELETE_ALL_RECORDS','',DB.records.length+' records');if(await commitMany(DB.records.map(r=>({t:'delete',r}))))toast('All records deleted.')};
+
+/* ---------- audit ---------- */
+function audit(){const A=[...DB.audit].reverse().slice(0,300);$('#a_tbl').innerHTML=tbl(['Date/Time','User','Action','Record ID','Details'],A.map(a=>[dt(a.at),a.by+(a.employeeNo?' (Emp '+a.employeeNo+')':''),a.action,a.id,a.detail]))}
+
+/* ---------- authentication ---------- */
+const authMsg=c=>({'auth/invalid-credential':'Wrong email or password.','auth/wrong-password':'Wrong email or password.','auth/user-not-found':'Wrong email or password.','auth/invalid-email':'Enter a valid email address.','auth/too-many-requests':'Too many attempts. Wait a few minutes and try again.','auth/network-request-failed':'No internet connection.','auth/user-disabled':'This account is disabled.'}[c]||'Sign-in failed ('+c+').');
+function stopSync(){unsubs.forEach(u=>u());unsubs=[];DB={records:[],audit:[]}}
+$('#lf').onsubmit=async e=>{e.preventDefault();if(!auth)return;$('#lerr').textContent='';$('#lbtn').disabled=true;$('#lbtn').textContent='Signing in…';
+try{await signInWithEmailAndPassword(auth,$('#le').value.trim(),$('#lpw').value)}catch(x){$('#lerr').textContent=authMsg(x.code)}finally{$('#lbtn').disabled=false;$('#lbtn').textContent='Sign in';$('#lpw').value=''}};
+$('#out').onclick=()=>signOut(auth);
+function startAuth(){if(!FB.apiKey||FB.apiKey.startsWith('PASTE')){$('#lerr').textContent='Firebase API key is missing. Open this HTML file and paste your key into FB.apiKey.';$('#lbtn').disabled=true;return}
+auth=getAuth(initializeApp(FB));db=getFirestore();
+onAuthStateChanged(auth,u=>{stopSync();CUR=ROLE=null;
+if(!u){document.body.classList.add('locked');return}
+const role=u.uid===UIDS.admin?'admin':u.uid===UIDS.employee?'employee':null;
+if(!role){signOut(auth);$('#lerr').textContent='This account is not authorised for this application.';return}
+CUR=u;ROLE=role;document.body.classList.remove('locked');document.body.classList.toggle('emp',role==='employee');
+$('#usr').textContent=(role==='admin'?'Administrator: ':'Employee: ')+u.email;startSync();show('dash')})}
+/* ---------- init ---------- */
+fillR();buildHist('gangs');buildHist('sockets');
+$('#who').value=localStorage.getItem('vx_who')||'';$('#who').oninput=()=>{localStorage.setItem('vx_who',$('#who').value);syncEmp()};
+if(typeof Chart==='undefined'||typeof XLSX==='undefined')$('#libwarn').textContent='Warning: a required library (Chart.js or SheetJS) failed to load. Charts and/or Excel export need an internet connection.';
+buildForm('gangs');buildForm('sockets');lb();startAuth();
+</script></body></html>
